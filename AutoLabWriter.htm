@@ -1,0 +1,643 @@
+<html><head>
+  <!--
+  Default Names, Parse input, Delete Big string, Output to new File,
+  -->
+<style>
+html {    font-size: 62.5%;}
+td, th {    border: 1px solid black;}
+table {    border-collapse: collapse;}
+textarea{    width: 300px;    height: 80px;  resize: both;}
+input{    width: 300px;    height: 20px;  resize: both;}
+body {
+    background-color: white;
+    color: black;
+    font-family: helvetica, arial, sans-serif;
+    font-size: 1.4em;
+    line-height: 1.5;
+}
+div, textarea, table, td, th, code, pre, samp {
+    word-wrap: break-word;
+}
+#in{  background-color: lightgrey;}
+.left {    float: left;}
+.w50 {
+    width: 50%;
+    height: 100%;
+    overflow-y: scroll;
+}
+._hidden_content{ display: none;}
+.focus {    background-color: yellow;}
+.menufocus {background-color: skyblue;}
+._infoout {background-color: lightblue;}
+._info_menu {border-bottom: black 1px solid;}
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script>
+var qs = function(par){return document.querySelector(par)};
+var qsa = function(par){return document.querySelectorAll(par)};
+var savename = "username";
+var activeclasses = {
+"iv" : "First",
+ "dv" : "Default" ,
+ "cv": "Default" ,
+ "botrange": "Default" ,
+ "toprange": "Default" ,
+ "name": "Default" ,
+ "title": "Default" ,
+ "problemdescription": "Default" ,
+ "dvhyp": "Default" ,
+ "hypsci": "Default" ,
+ "hypdetail": "Default" ,
+ "ivvar": "Default" ,
+ "dvvar": "Default" ,
+ "datapoints": "Default" ,
+ "repeats": "Default" ,
+ "relationship": "Default" ,
+ "updown": "Default" ,
+ "discuss": "Default" ,
+"conclusion": "Default" ,
+  "correlation": "Default" ,
+ "numanom": "Default" ,
+  "anoms": "Default" ,
+ "methsuc": "Default" ,
+ "evalreason": "Default" ,
+ "issues": "Default" ,
+ "newrange": "Default" ,
+  "solutions": "Default" ,
+  "fur": "Default" ,
+ "cvvar": "Default" ,
+ "equip": "Default" ,
+ "instructions": "Default",
+ "diagramsrc": "Default",
+  "tablesrc": "Default",
+  "graphsrc": "Default",
+  "safety": "Default",
+  "newrepeats": "Default"
+};
+
+/*var a = s.split(",");
+var dateTime = /"(\w+)":"([^"]+)"/
+a.forEach(function(x){
+console.log(x.replace(dateTime, "[$1]($2)"));
+});*/
+
+function elt(type, ...children) {
+  var node = document.createElement(type);
+children.forEach((child)=>
+ {
+    if (typeof child == "string")
+      child = document.createTextNode(child);
+    node.appendChild(child);
+  });
+  return node;
+}
+
+function basicSub(code) {
+  return code.replace(/\(\.(\w{0,20})\)/g,'<span class="$1">$1</span>').
+  replace(/\(\,(\w{0,20})\)/g,'<ol class="$1">$1</ol>').
+    replace(/\(\:(\w{0,20})\)/g,'<input text class="$1"><div class="_infoout _infoout$1"></div>').
+        replace(/\(\;(\w{0,20})\)/g,'<textarea class="$1"></textarea><div class="_infoout _infoout$1"></div>').
+            replace(/\(\#(\w{0,20})\)/g,'<img class="$1">').
+               replace(/\((\w{0,20})\)\[([^]{0,2000}?)\]/g,'<div class="_info$1">$2</div>')
+}
+
+function removeDuplicates(arr){
+  return arr.filter(function(el,ix,ar){
+    return ix === ar.indexOf(el);
+  });
+}
+
+function setSavename(){
+  savename = qs(".savename").value;
+  console.log("keys:    " + Object.keys(localStorage));
+}
+
+function updateActiveClasses(){
+  for (var key of Object.keys(activeclasses)) {
+    if (activeclasses.hasOwnProperty(key)) {
+      try{ activeclasses[key] = qs("." + key).value;}
+      catch(e){console.log("Error in update active classes   " + key + "   "  + e);}
+    }
+  }
+}
+
+function autosave(){
+  updateActiveClasses();
+  var currentAutosave = JSON.parse(localStorage.getItem("currentAutosave")) || 0;
+  console.log("currentAutosave" + currentAutosave + "  " + typeof  currentAutosave);
+  currentAutosave ++;
+  localStorage.setItem("currentAutosave", JSON.stringify(currentAutosave));
+    localStorage.setItem("autosave" + currentAutosave, JSON.stringify(activeclasses));
+}
+
+function savee(){
+  setSavename();
+updateActiveClasses();
+  localStorage.setItem(savename, JSON.stringify(activeclasses));
+
+  qs("a#downloadJSON").href = "data:text," + JSON.stringify(activeclasses);
+  qs("a#downloadJSON").download = savename;
+  qs("a#downloadJSON").innerHTML = savename;
+}
+
+function loadd(){
+  autosave();
+  var  savestring = qs(".savename").value;
+  if(savestring.charAt(0)==="{"){
+    console.log("outputting from JSON");
+    activeclasses = JSON.parse(savestring);
+    qs(".savename").value = "autosave"  + JSON.parse(localStorage.getItem("currentAutosave"));
+  }
+
+  else{
+  setSavename();
+  if(localStorage.getItem(savename)){
+    var tempclasses = JSON.parse(localStorage.getItem(savename));
+    for(var i in tempclasses){
+      if(activeclasses.hasOwnProperty(i)){activeclasses[i] = tempclasses[i]};
+    }
+    console.log(activeclasses);
+  }
+}
+
+  for (var key in activeclasses) {
+    console.log(key + " " + activeclasses[key])
+    if (activeclasses.hasOwnProperty(key)) {
+      var matchesint = qsa("." + key) ;
+      for (var key2 in matchesint) {
+        if (matchesint.hasOwnProperty(key2) && matchesint.hasOwnProperty(key2) !== "Default") {
+          matchesint[key2].value  =  activeclasses[key];
+          matchesint[key2].textContent  =  activeclasses[key];
+        }
+      }
+    }
+  }
+
+}
+
+function print(){
+  autosave();
+  var d1 = qs("div#in");
+    var d2 = qs("div#out");
+  var dp = qs("div#print");
+    d1.parentElement.removeChild(d1);
+    d2.classList.remove("w50")
+    dp.parentElement.removeChild(dp);
+}
+
+function clear_infoout(){
+  var infooutall = qsa("._infoout");
+  for(var infooutallindex = 0; infooutallindex < infooutall.length; infooutallindex++ ) {
+    infooutall[infooutallindex].innerHTML = "";
+  }
+}
+
+function eventSetup2(id){
+  var a = qs("input." + id) || qs("textarea." + id);
+  var b = Array.from(qsa("span." + id)).concat(  Array.from(qsa("ol." + id))).concat(Array.from(qsa("img." + id)));
+try{
+  a.addEventListener("focus", function() {
+    clear_infoout();
+    makeInteractive(id);
+  })
+}
+catch(e){console.log(e)};
+
+  for(var iter1 = 0; iter1 < b.length; iter1++){
+try{
+    (function(newb){
+      if(newb.tagName==="OL"){a.addEventListener("input", function() {
+        newb.innerHTML = a.value.split("\n").map(function(x){return "<li>" + x + "</li>"}).join(""); });
+      }
+      else if(newb.tagName==="IMG"){
+        a.addEventListener("input", function() {  newb.src = a.value;  });
+    }
+      else{a.addEventListener("input", function() {
+        newb.textContent = a.value;
+       });}
+
+      newb.addEventListener("click", function() { a.focus() });
+      a.addEventListener("focus", function() {         newb.classList.add("focus")        });
+      a.addEventListener("blur", function() {        newb.classList.remove("focus")       });
+    }(b[iter1]))
+  }catch(e){console.log("problem with: " + id)}
+}
+};
+
+function makeInteractive(id){
+  var a = qs("._infoout" + id);
+  var b = qsa("._info" + id);
+
+  var infoouter = elt("div");
+  infoouter.className = "_info_outer"
+  var infomenu = elt("div");
+  infomenu.className = "_info_menu"
+  var infotext = elt("div");
+  infotext.className = "__info_text"
+
+  for(var iter1 = 0; iter1 < b.length; iter1++){
+   (function(newb){
+     var cn = newb.parentElement.className;
+
+     var menuitem = elt("span", cn )
+     menuitem.className = "_infotitle" + cn;
+     menuitem.addEventListener("click", function() {
+      try{qs(".menufocus").classList.remove("menufocus");}catch(e){}
+      infotext.innerHTML = qs( "." + newb.parentElement.className + ">" + "._info" + id).innerHTML;
+      menuitem.classList.add("menufocus") ;
+     });
+     infomenu.appendChild(menuitem)
+   }(b[iter1]))};
+
+   infomenu.firstChild.classList.add("menufocus") ;
+      infotext.innerHTML = qs( "." + b[0].parentElement.className + ">" + "._info" + id).innerHTML;
+
+   a.appendChild(infoouter);
+   a.appendChild(infomenu);
+   a.appendChild(infotext);
+
+};
+
+
+function doit(){
+var all = document.body;
+var reg = /\([\.\,](\w{0,20})\)/g;
+var match, matches = [];
+while (match = reg.exec(all.innerHTML)){  matches.push(match[1])};
+matches =  removeDuplicates(matches);
+console.log(matches);
+
+all.innerHTML= basicSub(all.innerHTML);
+console.log(all.innerHTML);
+
+for (var keyo in activeclasses) {
+  if (activeclasses.hasOwnProperty(keyo)) {
+    eventSetup2(keyo);
+  }
+}
+}
+</script>
+
+
+</head>
+<body  onload="doit()">
+<div id="in" class="left w50">
+  <button class="save" onclick="savee()">Save</button>
+  <button class="load" onclick="loadd()">Load</button>
+  <input text class="savename">
+  <a id="downloadJSON"></a>
+  <h1 onclick="console.log(document.body.innerHTML)">How to write a simple lab report</h1>
+
+<h2>Step 0: What's your name? </h2> (:name)
+
+  <h2>Step 1: Identify Variables</h2>
+  <p>Think about ALL the variables that can affect the system.</p>
+  <p>Choose your INDEPENDENT VARIABLE:  (:iv)</p>
+  <p>Choose your DEPENDENT VARIABLE:  (:dv)</p>
+  <p>List your CONTROLLED VARIABLES:<br>
+  (;cv)</p>
+
+
+  <h2>Step 2: Title and Research Question</h2>
+  <p>Choose a title:<br>
+    (;title)</p>
+  <p>The Research Question should talk about the variables. It has been written for you </p>
+  <p>To achieve a good level you should describe the problem in more detail:<br>
+  (;problemdescription)</p>
+
+  <h2 >Step 3: Hypothesis</h2>
+  <p>You are going to increase the (.iv). What do you think will happen to the (.dv)? (:dvhyp)</p>
+  <p>Using <strong>science</strong> explain why you think this will happen? <br>
+  (;hypsci)</p>
+  <p>Can you justify your hypothesis (or give any more details).<br>
+  (;hypdetail)  </p>
+
+
+
+  <h2 >Step 4: Controlling the variables</h2>
+  <p>Your Independent variable is (.iv). How are you going to <strong>change</strong> it:?<br>
+  (;ivvar)</p>
+  <p>Your Dependent variable is (.dv). How are you going to <strong>measure</strong> it:?<br>
+  (;dvvar)</p>
+  <p>Your Controlled variables are (.cv) <br> How are you going to control each of them?
+  <table><tr>
+    <td style="width:20%">(,cv)</td><td style="width:80%">(;cvvar)</td>
+  </tr></table>
+</p>
+
+  <h2 >Step 5: Quantity of Data</h2>
+  <p>What is the lowest value of (.iv) you will test? (:botrange) <br>
+  What is the highest value of (.iv) you will test? (:toprange) <br>
+  How many measurements will you take between (.botrange) and (.toprange) (:datapoints) <br>
+  How many times will you repeat the whole experiment? (:repeats)</p>
+
+  <h2 >Step 6: Equipment</h2>
+  <p>List all of the equipment and instruments you might need<br>
+    (;equip)</p>
+
+  <h2 >Step 7: Diagram</h2>
+  <p>Put a jpg or png file in the same place as this HTML file and write the full filename here:(:diagramsrc)</p>
+
+  <h2 >Step 8: Step by Step Method</h2>
+  <p>Describe how to carry out the experiment step by step.
+  (;instructions)</p>
+
+  <h2>Step 9: Safety</h2>
+  <p>What are the possible dangers and how will you make them safe?
+  (;safety)</p>
+
+  <h2>Step 10: Table</h2>
+  <p>Put a jpg or png file in the same place as this HTML file and write the full filename here:(:tablesrc)</p>
+
+  <h2>Step 11: Graph</h2>
+  <p>Put a jpg or png file in the same place as this HTML file and write the full filename here:(:graphsrc)</p>
+
+  <h2>Step 12: Discussion</h2>
+  <p>What relationship does your data show? (:relationship)</p>
+  <p>Does your data go up, down or stay horizontal? (:updown)</p>
+  <p>Why do you think this relationship happens?<br>
+    Why does your data go (.updown)?
+    (;discuss)</p>
+
+  <h2>Step 13: Conclusion</h2>
+  <p>You predicted that as the (.iv) increased the (.dv) would (.dvhyp)
+  Now relate what you have found to your Prediction {Hypothesis}, was it correct?
+  (;conclusion)</p>
+
+  <h2>Step 14: Evaluation of data</h2>
+  <p>How strong is the correlation of your data? (:correlation)
+    How many anomalous points are there?  (:numanom)</p>
+    Which ones are they? <br>
+    (;anoms)
+
+  <h3>Step 15: Evaluation of method</h3>
+  <p>How did the method work? (:methsuc) What is your reasoning? (:evalreason)
+  What are the problems {issues} with the method? (;issues).</p>
+
+  <h3>Step 16: Improvements</h3>
+  <p>You took readings from (.botrange) to (.toprange) with (.range) datapoints.
+    What range would you use next time? (:newrange).<br>
+    Instead of (.repeats) repeats how many repeats would you do next time? (:newrepeats)<br>
+    How would you solve the issues you identified</p>
+    <table><tr>
+      <td style="width:20%">(,issues)</td><td style="width:80%">(;solutions)</td>
+    </tr></table>
+
+  <h3>Step 17: Further study</h3>
+  <p>What elso could you investigate to learn more about the topic (:fur)</p>
+
+
+
+</div>
+
+
+<div id="out" class="left w50">
+  <p>(.name)</p><br>
+
+ <h1>Title: (.title)</h1>
+
+  <h2>Research Question:</h2>
+  <p>How does the (.iv) affect the (.dv).
+  Keeping (.cv) constant.</p>
+  <p>(.problemdescription)</p>
+
+
+  <h2>Hypothesis:</h2>
+  <p>I predict that as the (.iv) increases the (.dv) will (.dvhyp).<br>
+  I think this will happen because:(.hypsci)<br>
+    (.hypdetail)
+  </p>
+
+
+  <h2>Method</h2>
+
+  <h3>Variables:</h3>
+  <p>Independent Variable: (.iv)<br>(.ivvar)</p>
+  <p>Dependent Variable: (.dv)<br>(.dvvar)</p>
+  <p>Controlled Variables(s)<br> </p>
+  <table><tr>
+    <th>Variable</th><th>How it's controlled</th> </tr><tr>
+    <td style="width:20%">(,cv)</td><td style="width:80%">(,cvvar)</td>
+  </tr></table>
+
+  <h3>Amount of Data:</h3>
+  I will take (.datapoints) measurements between (.botrange) and (.toprange).
+  I will perform the whole experiment (.repeats) times and take the average.</p>
+
+  <h3>Equipment</h3>
+    <p>(,equip)</p>
+
+  <h3 >Diagram:</h3>
+    (#diagramsrc)
+
+
+  <h3 >Instructions: (step-by-step method)</h3>
+  <ol>  (,instructions)  </ol>
+
+<h3>Safety</h3>
+(,safety)
+
+  <h2>Table</h2>
+  (#tablesrc)
+
+  <h2>Graph</h2>
+  (#graphsrc)
+
+
+
+  <h2>Discussion</h2>
+  <p>My data is a (.relationship) which goes (.updown).<br>
+  That tells me that as the (.iv) increases the (.dv) goes (.updown).</p>
+  <p>I think this relationship is because (.discuss)</p>
+
+  <h2>Conclusion</h2>
+  <p>I predicted that as the (.iv) increased the (.dv) would (.hyp)<br>
+  (.conclusion)</p>
+
+  <h2>Evaluation</h2>
+
+  <h3>Evaluation of data</h3>
+  <p>My data show a (.correlation) correlation.<br>There are (.numanom) anomalous points.
+  (.anoms)</p>
+
+  <h3>Evaluation of method</h3>
+  <p>I felt the method worked (.methsuc) because (.evalreason)
+  The problems with the method are (,issues).</p>
+
+  <h3>Improvements</h3>
+  I could improve the range of data to (.newrange).<br>
+  Instead of (.repeats) I could do (.newrepeats) repeats.</p>
+    The solutions to the issues are:
+    <table><tr>
+      <td style="width:20%">(,issues)</td><td style="width:80%">(,solutions)</td>
+    </tr></table>
+
+  <h3>Further study</h3>
+  <p>(.fur)</p>
+
+  </div>
+
+  <div id="print">
+  <hr>
+  <h2><button onclick="print()">Print Format</button></h2>
+  </div>
+
+
+  <div class="_hidden_content">
+  <div class="_Description">
+(iv)[<p>This is the variable YOU will change.<br>It goes along the <em>bottom</em> of the graph</p>]
+(dv)[<p>This is the variable YOU will measure.<br>It goes along the <em>left hand side</em> of the graph</p>]
+(cv)[<p>These are the variables that will need to be kept constant to make it a fair test</p>]
+(botrange)[<p>This is the lowest value of (.iv) you will test?<br>Include units</p>]
+(toprange)[<p>What is the highest value of (.iv) you will test?<br>Include units</p>]
+(name)[<p>Write your First name and Surname</p>]
+(title)[<p>The title can be just a statement of what you will study.<br>
+It could be just: "The relationship between (.iv) and (.dv)" with a explaination of the situation.</p> ]
+(problemdescription)[<p>Decribe some examples of how knowing the relationship between (.iv) and (.dv) could be useful</p>]
+(dvhyp)[<p>Write a simple statement e.g. increases linearly, goes down slowly</p>]
+(hypsci)[<p>Use scientific terminology to explain why you think your prediction is correct</p>]
+(hypdetail)[<p>Can you explain the science words you have used</p>]
+(ivvar)[<p>You have choosen to change the (.iv) you need to measure it to make sure you have the right values. How will you do that?</p>]
+(dvvar)[<p>You wnat to know how the (.dv) is affected by the (.iv) so you need to measure it. How will you do that?</p>]
+(datapoints)[<p>Datapoints means how many different measurements of the (.iv) you will make.</p>]
+(repeats)[<p>Repeats is how many times you will repeat the whole experiment<br>
+  Repeating an experiment allows you to take an average {which can be more accurate} and spot any mistakes {anomalies}</p>]
+(relationship)[<p>The relationship can be a straight line {linear} or a curve</p>]
+(updown)[<p>Does the line {or curve} go up, down or stay straight</p>]
+(discuss)[<p>As (.iv) increases the (.dv) goes (.updown). You need to explain WHY that happens using scientific reasoning</p> ]
+(pre)[<p>Your prediction is what you think will happen, will the (.dv) go up or down when you increase the (.iv)?</p>]
+(correlation)[<p>A strong correlation is when all the data is on {or very close to} the line of best fit {trendline}<br>
+  A medium correlation is when the points are quite near the line {but not very}<br>
+  A weak correlation is when its hard to know where to draw the line of best fit
+  No correlation is when the data is all over the place and not in a line</p> ]
+(numanom)[<p>An anomaly is a datapoint that is much further from the line than most of the others<br>
+  It might have been because of a mistake when you took the measurement</p>]
+  (anoms)[<p>To descibe an anomaly you can write the value of the (.iv) at which it occured</p> ]
+(methsuc)[<p>Based on your experience performing the experiment did it work well</p>]
+(evalreason)[<p>Try to give specific reasons why you think the experiment went well or badly</p>]
+(issues)[<p>Problems or isssues are reasons that the results might not be as good as you expected<br>
+  Also write down things that you can do better next time</p>]
+(newrange)[<p>It is always possible to improve an experiment by increasing the range of the IV.<br>
+ State what your increased range would be.<br>
+ For a good level you can explain <strong>how</strong> to improve the range of data {see Examples}</p>]
+(newrepeats)[<p>It is always possible to improve an experiment by increasing the number of repeats<br>
+Be realistic assuming you have another whole lessons to do the experiment again</p>]
+(solutions)[<p>Solutions should specifically explain what method or equipment you can use to solve the identified problems</p>]
+(improvements)[<p>You can improve the method or the equpment to get better results.<br>
+  Give <strong>specific</strong> details about each one. </p> ]
+(fur)[<p>You investigated how the (.iv) affects the (.dv). Is there anything related to that you could test in a whole new experient?</p>]
+(cvvar)[<p>For each controlled variable state how you will make sure its controlled.<br>
+  Often this can be done by using the same materials, location or values. State what those values are!<p>]
+(equip)[<p>List the equipment you will use to measure the values. With details like how long a ruler you will use</p>]
+(instructions)[<p>Step 1 is often "set up the equipment as shown"<br>
+  You can use phrases like "repeat step n five times"</p>]
+(diagramsrc)[<p>The diagram should show the setup of the equipment.<br>
+  It should be labeled<br>
+  You can take a photo or draw a picture. A screenshot <pre>cmd+shift+4</pre> can be used</p>]
+(tablesrc)[<p>Your table MUST inlude (.iv) and (.dv).<br> It should have a row for each value of (.iv) and a column for each repeat</p>]
+(graphsrc)[<p>Your Graph should plot IV along the bottom and DV up the side <br>it should have the points plotted as a scatter plot <br>it should be clear and neatly presented <br>it should have a line of best fit <em> {trendline}</em></p>]
+
+(safety)[<p>A good way to do this is to list the risks and the measures you will take to minimize them.</p>]
+  </div>
+  <div class="_Example">
+    (iv)[wingspan]
+    (dv)[distance]
+    (cv)[type of paper,
+    shape of plane,
+    mass of plane,
+    speed of throw,
+    height of release]
+    (botrange)[1cm]
+    (toprange)[10cm]
+    (name)[Paul Torrington]
+    (title)[How does the wingspan of a paper aeroplane affect the distance it flies.]
+    (problemdescription)[Paper planes can fly long distances because the wings help provide an upwards force keeping it in the air longer. The longer its in the air the further it can fly because distance = speed * time.]
+    (dvhyp)[increase]
+    (hypsci)[The larger the wing the more surface area it has. Therefore the longer it will stay in the air and the further it will go.]
+    (hypdetail)[Air moving over the wing provides lift. The longer the wings the more lift they will provide. ]
+    (ivvar)[I will start off with a wide paper plane . I will then cut off strips with a pair of scissors.]
+    (dvvar)[I will use a long tape measure that I will stretch out along the floor. When the plane hits the floor I will see where along the tape it landed.]
+    (datapoints)[9]
+    (repeats)[3]
+    (relationship)[Linear]
+    (updown)[up]
+    (discuss)[I think as the wingspan increases there is more lift. The planes did stay in the air for longer when they had a bigger wingspan.]
+    (conclusion)[My prediction was correct. I think that was because the longer wingspan provided more lift. The longer wings also had a better shape which helped the plane to fly. The line didnt go up as steeply as I expected {meaning that the wingspan didnt make the distance very much longer. I think that was because the longer wings meant the planes didnt fly as straight as short wings. ]
+    (correlation)[medium]
+    (numanom)[1]
+    (anoms)[The datapoint at 9cm is much lower than the others. I think that is because the plane flipped upside down on one of the trials and on the other two trials it didnt fly straight.]
+    (methsuc)[quite well]
+    (evalreason)[I found that it was easy to get data but sometimes it was hard to throw the plane with the same speed]
+    (issues)[Throwing the planes exactly the same was difficult
+    Sometimes the planes bounced when they landed
+    The nose of the plane got bent when it landed]
+    (newlow)[Default]
+    (newhigh)[Default]
+    (newrange)[I would use 1cm to 20 cm. I would need to use A3 paper and maybe I would use card to help such big planes keep their shape]
+    (newrepeats)[5]
+    (solutions):[I could get more practice throwing the planes before starting the experiment or launch them using an elastic band.
+    I could put bluetack or paint on the end so they stay stil or leave a mark where they landed
+    I could use a new plane if it got too bent
+     but I would have to be careful to make it exactly the same]
+    (fur)[I could investigate how wingspan affects the time take for the plane to hit the ground. That way I could see if the reasoning for my hypothesis was correct]
+    (cvvar)[Use the same paper for each plane (A4 white 80g)
+    I will use the same design for each plane
+    When I cut off the strips I will add blue tack weighing the same amount to the plane
+    I will practice throwing at the same speed.
+    I will release the plane at my head height (1.8m) every time.]
+    (equip):[Paper: A4 80g,   Tape measure: 50m ]
+    (instructions)[Make the plane and stretch out the ruler.
+    Throw the first plane and measure the distance and record it.
+    Repeat step 2 three times.
+    Cut 1cm off both wings and repeat steps 2-3.
+    Continue until the wings are 1cm wide ]
+    (safety)[Tripping over the tape measure: I will make sure people know to be careful.
+    Being hit by planes. I will make sure the planes arent too heavy and people arent nearby when I throw them. ]
+  </div>
+  <div class="_Marksheme">
+(iv)[state a variable]
+(dv)[state a variable]
+(cv)[state how to manipulate the variables]
+(botrange)[and outline how sufficient relevant data will be collected]
+(toprange)[and outline how sufficient relevant data will be collected]
+(title)[state a problem or question to be tested by a scientific investigation]
+(problemdescription)[outline a problem or question to be tested by a scientific investigation]
+(dvhyp)[select a testable prediction]
+(hypsci)[outline a testable prediction using scientific reasoning]
+(hypdetail)[outline a testable prediction using scientific reasoning]
+(ivvar)[outline how to manipulate the variables,]
+(dvvar)[and state how relevant data will
+be collected]
+(datapoints)[and outline how sufficient relevant data will be collected]
+(repeats)[and outline how sufficient relevant data will be collected]
+(relationship)[accurately interpret data]
+(updown)[accurately interpret data]
+(discuss)[accurately interpret data and outline results using scientific reasoning]
+(conclusion)[outline the validity of a prediction based on the outcome of a scientific
+investigation]
+(correlation)[outline the validity of the method based on the outcome of a scientific investigation]
+(numanom)[outline the validity of the method based on the outcome of a scientific investigation]
+(anoms)[outline the validity of the method based on the outcome of a scientific
+investigation]
+(methsuc)[outline the validity of the method based on the outcome of a scientific investigation]
+(evalreason)[outline the validity of the method based on the outcome of a scientific investigation]
+(issues)[outline the validity of the method based on the outcome of a scientific
+investigation]
+(newlow)[Default]
+(newhigh)[Default]
+(newrange)[state improvements or extensions to the method that would benefit the scientific investigation.]
+(newrepeats)[state improvements or extensions to the method that would benefit the scientific investigation.]
+(solutions)[outline improvements or extensions to the method that would benefit the
+scientific investigation.]
+(fur)[state improvements or extensions to the method that would benefit the scientific investigation.]
+(cvvar)[outline how to manipulate the variables,]
+(equip)[design a {} method in which he or she selects appropriate materials and equipment.]
+(instructions)[design a logical, complete {} method]
+(diagramsrc)[outline how to manipulate the variables, and outline how sufficient, relevant data will be collected]
+(tablesrc)[collect and present data in numerical and/or visual forms]
+(graphsrc)[correctly collect, organize and present data in numerical and/or visual forms]
+(safety)[design a safe method]
+  </div>
+  </div>
+  </body>
+</html>
