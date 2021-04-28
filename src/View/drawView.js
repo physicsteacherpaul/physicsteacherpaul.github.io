@@ -11,7 +11,7 @@ const colours = (i, opacity = 1) => {
 
 // Draw foreground, the rays and sin waves and phasors
 
-function drawForground (c, slit, ray, wave, pos, viewScale, amp) {
+function drawForground (c, slit, ray, wave, pos, viewScale, { amp, scale, switchZoom }) {
   const geo = ray.geo
   const edges = ray.grating.edges.map(a => a) // .reverse().map(([a, b]) => [a + 2 * ray.grating.firstSlit, b + 2 * ray.grating.firstSlit])
 
@@ -72,13 +72,23 @@ function drawForground (c, slit, ray, wave, pos, viewScale, amp) {
   // bottom wave with areas
   // const fills = sd.centres.map((yy, i, a) => [yy * geo.sin, 3, colours(i)])
 
-  const fills = slit.edges.map((c, i, a) => {
-    const [yyy, yy] = c.map(cc => cc * geo.sin)
-    return [Math.min(-yyy, -yy), Math.max(Math.abs(-yyy + yy), 1), colours(i)]
-  })
-  // newSin(c, wave, 100, pos.topViewXY.y + 300, [0, 600], pos.grating.x, 1, 0, 'black', fills)
-  cosineCurve(c, wave, 300, 700, [-150, 700], 0, 4, 0, 'black', fills)
-  drawLine(c, 300, 600, 0, 200, 'black')
+  if (switchZoom) {
+    let { length, phase, amplitude } = wave
+    length = length / (geo.sin * -4)
+    const wave2 = { length, phase, amplitude }
+    const fills = slit.edges.map((c, i, a) => {
+      const [yyy, yy] = c.map(cc => cc * -1 / 4)
+      return [Math.min(-yyy, -yy), Math.max(Math.abs(-yyy + yy), 1), colours(i)]
+    })
+    cosineCurve(c, wave2, 300, 700, [-150, 700], 0, 4, 0, 'black', fills)
+  } else {
+    const fills = slit.edges.map((c, i, a) => {
+      const [yyy, yy] = c.map(cc => cc * geo.sin)
+      return [Math.min(-yyy, -yy), Math.max(Math.abs(-yyy + yy), 1), colours(i)]
+    })
+    cosineCurve(c, wave, 300, 700, [-150, 700], 0, 4, 0, 'black', fills)
+    drawLine(c, 300, 600, 0, 200, 'black')
+  }
 
   let resultAmpitude = ray.modulatedResultant.mag * wave.amplitude
   let wavePhasor = ray.modulatedResultant.scale(wave.amplitude * viewScale.intensity)
@@ -86,6 +96,12 @@ function drawForground (c, slit, ray, wave, pos, viewScale, amp) {
   if (amp) {
     resultAmpitude = resultAmpitude * ray.modulatedResultant.mag
     wavePhasor = wavePhasor.scale(ray.modulatedResultant.mag)
+  }
+
+  if (!scale) {
+    const scaleFactor = scale ? 1 : slit.number * (slit.realWidth || 20) / 50
+    resultAmpitude = resultAmpitude * scaleFactor
+    wavePhasor = wavePhasor.scale(scaleFactor)
   }
 
   drawLine(c, ...pos.phaseDiagram.addXY(100, 0), ...ray.modulatedResultant.scale(wave.amplitude * slit.number), 'black')
@@ -97,20 +113,27 @@ function drawForground (c, slit, ray, wave, pos, viewScale, amp) {
 }
 
 // The grating is drawn by rectangles, this function takes the edges of the slit, the top and bottom and makes pairs oy y-coords
-function drawGrating (c, { edges: e, firstSlit: f, width: w }, vSize, x, dx) {
-  // Add the top and bottom of the grating
-  [0].concat(e.flat().map((v) => v + f + vSize / 2)).concat([vSize])
-    // flatten to a set of pairs for drawing
+function drawVerticalGrating (c, { edges: e, firstSlit: f, width: w }, length, xpos, thickness) {
+  // Add the top and bottom of the grating  flatten to a set of pairs for drawing
+  [0].concat(e.flat().map((v) => v + f + length / 2)).concat([length])
     .reduce((ac, cv, i, ar) => i % 2 ? ac.concat([[ar[i - 1], ar[i]]]) : ac, [])
     // draw each pair as a rectangle
-    .forEach(([y1, y2], i, a) => { c.fillRect(x - dx, y1, dx * 2, y2 - y1) })
+    .forEach(([y1, y2], i, a) => { c.fillRect(xpos - thickness, y1, thickness * 2, y2 - y1) })
+}
+
+function drawHorizontalGrating (c, { edges: e, firstSlit: f, width: w }, longStart, length, transStart, thickness, horizontal, centered) {
+  // Add the top and bottom of the grating  flatten to a set of pairs for drawing
+  const flattenedEdges = [longStart].concat(e.flat().map((v) => v + longStart + 100)).concat([length + longStart])
+    .reduce((ac, cv, i, ar) => i % 2 ? ac.concat([[ar[i - 1], ar[i]]]) : ac, [])
+    // draw each pair as a rectangle
+  flattenedEdges.forEach(([x1, x2], i, a) => { c.fillRect(x1, transStart - thickness, x2 - x1, thickness * 2) })
 }
 
 /*
 *  Draws the areas for each section, the screen and the grating
 */
 
-function drawBackground (c, intensity, pos, amplitude, slit, { scale, show, amp }, viewScale) {
+function drawBackground (c, intensity, pos, amplitude, slit, { scale, show, amp, switchZoom }, viewScale) {
   // c.clearRect(0, 0, c.canvas.width, c.canvas.height)   - for canvas based optimisation
   c.fillStyle = 'lightgrey'
   c.strokeStyle = 'black'
@@ -120,19 +143,23 @@ function drawBackground (c, intensity, pos, amplitude, slit, { scale, show, amp 
   c.strokeRect(pos.screen.x, 0, pos.screen.dx, pos.topViewXY.y)
 
   // Draws the grating
-  drawGrating(c, slit, pos.topViewXY.y, pos.grating.x, pos.grating.dx)
-
+  drawVerticalGrating(c, slit, pos.topViewXY.y, pos.grating.x, pos.grating.dx)
+  if (switchZoom) {
+    drawHorizontalGrating(c, slit, 200, 600, pos.topViewXY.y + 10, pos.grating.dx, true)
+  }
   // Draw the intensity traces
 
   const traceAmplitude = amplitude * viewScale.intensity
+  console.log(slit.width, typeof slit.width)
+  const scaleFactor = scale ? 1 : slit.number * (slit.realWidth || 20) / 50
 
   if (show) {
-    drawTrace(c, intensity[0], pos.screen.x, 0, 'rgba(255, 0, 0, 0.3)', 0, 1, -traceAmplitude, 0, amp)
-    drawTrace(c, intensity[1], pos.screen.x, 0, 'rgba(0, 255, 0, 0.5)', 0, 1, -traceAmplitude, 0, amp)
+    drawTrace(c, intensity[0], pos.screen.x, 0, 'rgba(255, 0, 0, 0.3)', 0, 1, -traceAmplitude, 0, amp, scaleFactor)
+    drawTrace(c, intensity[1], pos.screen.x, 0, 'rgba(0, 255, 0, 0.5)', 0, 1, -traceAmplitude, 0, amp, scaleFactor)
   }
-  drawTrace(c, intensity[2], pos.screen.x, 0, 'black', 0, 1, -traceAmplitude, 0, amp)
-  drawTrace(c, intensity[3], pos.screen.x, 0, 'rgba(0, 0, 0, 0.2)', 0, 1, -traceAmplitude, 0, amp)
-  drawTrace(c, intensity[4], pos.screen.x - 100, 0, undefined, 0, 1, -traceAmplitude, 0, amp)
+  drawTrace(c, intensity[2], pos.screen.x, 0, 'black', 0, 1, -traceAmplitude, 0, amp, scaleFactor)
+  drawTrace(c, intensity[3], pos.screen.x, 0, 'rgba(0, 0, 0, 0.2)', 0, 1, -traceAmplitude, 0, amp, scaleFactor)
+  drawTrace(c, intensity[4], pos.screen.x - 100, 0, undefined, 0, 1, -traceAmplitude, 0, amp, scaleFactor)
 }
 
 export { drawForground, drawBackground }
