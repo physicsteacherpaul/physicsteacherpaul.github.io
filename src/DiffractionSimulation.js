@@ -171,7 +171,7 @@ function addEventListeners () {
     settings.animate.run = !settings.animate.run
     checkboxes.animate.checked = settings.animate.run
   })
-  canvas.addEventListener('click', e => {
+  window.addEventListener('click', e => {
     if (e.detail === 3) {
       settings.record = !settings.record
       checkboxes.record.checked = settings.record
@@ -179,7 +179,7 @@ function addEventListeners () {
       checkboxes.animate.checked = false
     }
   })
-  canvas.addEventListener('mousemove', (e) => {
+  window.addEventListener('mousemove', (e) => {
     if (mouseCoords) {
       const b = new Vec(e.offsetX, e.offsetY)
       dragEvent(mouseCoords, b)
