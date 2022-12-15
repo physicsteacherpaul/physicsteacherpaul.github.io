@@ -144,8 +144,10 @@ function animateIt (time, lastTime) {
     // if (ray.normalisedResultant.phase > newRay.normalisedResultant.phase) {
     //   intensity.addIntensity(ray, undefined, settings.mirror)
     // }
-    phasors.forEach((v, i, a) => { phasors[i] = phasors[i].rotate(-0.01*wavelength/20) })
+     // phasors.forEach((v, i, a) => { phasors[i] = phasors[i].rotate(-0.01*wavelength/20) })
 
+    phasors[0] = phasors[0].rotate(-0.01*20/wavelength) 
+    phasors[1] = phasors[1].rotate(-0.01) 
     update()
   }
 
